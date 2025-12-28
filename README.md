@@ -46,39 +46,6 @@ clrscr().
 2- Character types (mo5_ctype): - Character validation compliant with C
 standards. - Functions: islower(), isupper(), isprint(), ispunct().
 
-## 📥 SDK Installation (Headers and Library)
-
-To use this library in another project without having to recompile the
-source files (.c), you can automate retrieval of the precompiled SDK
-(files .h and .a) via an install target in your Makefile.
-
-### Makefile Configuration
-
-Add these variables and this rule to your Makefile to manage automatic
-installation from GitHub Releases:
-
-    # SDK version to retrieve
-    SDK_VERSION = v0.1.0
-    # Release URL (replace with your real GitHub link)
-    SDK_URL     = https://github.com/thgl057/sdk_mo5/releases/download/$(SDK_VERSION)/sdk_mo5.zip
-    # Local folder where to install the SDK
-    SDK_DIR     = lib/sdk_mo5
-
-    install:
-        @echo "Installing MO5 SDK $(SDK_VERSION)..."
-        @mkdir -p "$(SDK_DIR)"
-        @curl -L "$(SDK_URL)" -o sdk_temp.zip
-        @unzip -o sdk_temp.zip -d "$(SDK_DIR)"
-        @rm sdk_temp.zip
-        @echo "✓ SDK installed successfully in $(SDK_DIR)"
-
-## 🚀 Usage
-
-Once the SDK is retrieved, you can compile your program by linking the
-library:
-
-    cmoc --thommo main.c -I./sdk_mo5/include ./sdk_mo5/lib/libsdk_mo5.a -o mon_programme.k7
-
 ## 📄 License
 
 This project is intended for retro-computing on Thomson MO5.
