@@ -9,7 +9,7 @@ used with the **CMOC** compiler.
 -   `include/` : Contains public headers (`.h`).
 -   `obj/` : Temporary directory for object files (generated at
     compilation).
--   `lib/` : Contains the final static library `libmo5.a`.
+-   `lib/` : Contains the final static library `libsdk_mo5.a`.
 
 ## 🛠️ Installation & Compilation
 
@@ -77,7 +77,7 @@ installation from GitHub Releases:
 Once the SDK is retrieved, you can compile your program by linking the
 library:
 
-    cmoc --thommo main.c -I./sdk_mo5/include ./sdk_mo5/lib/libmo5.a -o mon_programme.k7
+    cmoc --thommo main.c -I./sdk_mo5/include ./sdk_mo5/lib/libsdk_mo5.a -o mon_programme.k7
 
 ## 📄 License
 

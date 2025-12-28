@@ -13,7 +13,7 @@ DIST_DIR = sdk_mo5
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
 HDRS = $(wildcard $(INC_DIR)/*.h)
-LIB_NAME = libmo5.a
+LIB_NAME = libsdk_mo5.a
 
 all: $(LIB_DIR)/$(LIB_NAME)
 
