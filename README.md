@@ -1,78 +1,84 @@
 # MO5 Retro-Library
 
-Une bibliothèque C légère pour le développement sur Thomson MO5, conçue pour être utilisée avec le compilateur **CMOC**.
+A lightweight C library for development on Thomson MO5, designed to be
+used with the **CMOC** compiler.
 
-## 📁 Structure du Projet
+## 📁 Project Structure
 
-- `src/` : Contient les fichiers sources (`.c`).
-- `include/` : Contient les headers publics (`.h`).
-- `obj/` : Dossier temporaire pour les fichiers objets (généré à la compilation).
-- `lib/` : Contient la bibliothèque statique finale `libmo5.a`.
+-   `src/` : Contains source files (`.c`).
+-   `include/` : Contains public headers (`.h`).
+-   `obj/` : Temporary directory for object files (generated at
+    compilation).
+-   `lib/` : Contains the final static library `libmo5.a`.
 
 ## 🛠️ Installation & Compilation
 
-### Prérequis
-- **CMOC** (version 0.1.93 ou supérieure recommandée).
-- **lwtools** (pour l'archiveur `lwar`).
+### Prerequisites
 
-### Compiler la bibliothèque
-Pour générer les fichiers objets et l'archive `.a`, lancez simplement :
-```bash
-make
-```
+-   **CMOC** (version 0.1.93 or higher recommended).
+-   **lwtools** (for the `lwar` archiver).
 
-### Exporter le SDK
-Pour générer un dossier sdk_mo5 prêt à être distribué (contenant uniquement les .h et le .a), utilisez :
+### Compile the library
 
-```bash
-make export_sdk
-```
+To generate the object files and the `.a` archive, simply run:
 
-## 📦 Contenu de la bibliothèque
-La bibliothèque est divisée en trois modules principaux :
+    make
 
-1- Entrées/Sorties de base (mo5_defs) :
-- Accès direct au moniteur système via interruptions swi.
-- Fonctions : mo5_getchar(), mo5_putchar(), mo5_newline().
+### Export the SDK
 
-2- Mini-stdio (mo5_stdio) :
-- Fonctions de haut niveau pour l'écran et le clavier.
-- Fonctions : fgets() (avec support du Backspace), puts(), clrscr().
+To generate a folder sdk_mo5 ready to be distributed (containing only
+the .h and the .a), use:
 
-2- Types de caractères (mo5_ctype) :
-- Validation de caractères conforme aux standards C.
-- Fonctions : islower(), isupper(), isprint(), ispunct().
+    make export_sdk
 
-## 📥 Installation du SDK (Headers et Bibliothèque)
+## 📦 Library Contents
 
-Pour utiliser cette bibliothèque dans un autre projet sans avoir à recompiler les fichiers sources (`.c`), vous pouvez automatiser la récupération du SDK pré-compilé (fichiers `.h` et `.a`) via une cible `install` dans votre Makefile.
+The library is divided into three main modules:
 
-### Configuration du Makefile
+1- Basic Input/Output (mo5_defs): - Direct access to the system monitor
+via swi interrupts. - Functions: mo5_getchar(), mo5_putchar(),
+mo5_newline().
 
-Ajoutez ces variables et cette règle à votre Makefile pour gérer l'installation automatique depuis les Releases GitHub :
+2- Mini-stdio (mo5_stdio): - High-level functions for screen and
+keyboard. - Functions: fgets() (with Backspace support), puts(),
+clrscr().
 
-```makefile
-# Version du SDK à récupérer
-SDK_VERSION = v0.1.0
-# URL de la release (remplacez par votre lien GitHub réel)
-SDK_URL     = https://github.com/thgl057/sdk_mo5/releases/download/$(SDK_VERSION)/sdk_mo5.zip
-# Dossier local où installer le SDK
-SDK_DIR     = lib/sdk_mo5
+2- Character types (mo5_ctype): - Character validation compliant with C
+standards. - Functions: islower(), isupper(), isprint(), ispunct().
 
-install:
-	@echo "Installation du SDK MO5 $(SDK_VERSION)..."
-	@mkdir -p "$(SDK_DIR)"
-	@curl -L "$(SDK_URL)" -o sdk_temp.zip
-	@unzip -o sdk_temp.zip -d "$(SDK_DIR)"
-	@rm sdk_temp.zip
-	@echo "✓ SDK installé avec succès dans $(SDK_DIR)"
-```
-## 🚀 Utilisation 
-Une fois le SDK récupéré, vous pouvez compiler votre programme en liant la bibliothèque :
+## 📥 SDK Installation (Headers and Library)
 
-``` bash
-cmoc --thommo main.c -I./sdk_mo5/include ./sdk_mo5/lib/libmo5.a -o mon_programme.k7
-```
+To use this library in another project without having to recompile the
+source files (.c), you can automate retrieval of the precompiled SDK
+(files .h and .a) via an install target in your Makefile.
 
-## 📄 Licence
-Ce projet est destiné au retro-computing sur Thomson MO5.
+### Makefile Configuration
+
+Add these variables and this rule to your Makefile to manage automatic
+installation from GitHub Releases:
+
+    # SDK version to retrieve
+    SDK_VERSION = v0.1.0
+    # Release URL (replace with your real GitHub link)
+    SDK_URL     = https://github.com/thgl057/sdk_mo5/releases/download/$(SDK_VERSION)/sdk_mo5.zip
+    # Local folder where to install the SDK
+    SDK_DIR     = lib/sdk_mo5
+
+    install:
+        @echo "Installing MO5 SDK $(SDK_VERSION)..."
+        @mkdir -p "$(SDK_DIR)"
+        @curl -L "$(SDK_URL)" -o sdk_temp.zip
+        @unzip -o sdk_temp.zip -d "$(SDK_DIR)"
+        @rm sdk_temp.zip
+        @echo "✓ SDK installed successfully in $(SDK_DIR)"
+
+## 🚀 Usage
+
+Once the SDK is retrieved, you can compile your program by linking the
+library:
+
+    cmoc --thommo main.c -I./sdk_mo5/include ./sdk_mo5/lib/libmo5.a -o mon_programme.k7
+
+## 📄 License
+
+This project is intended for retro-computing on Thomson MO5.
