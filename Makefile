@@ -6,9 +6,10 @@ ARFLAGS = -c
 
 SRC_DIR = src
 INC_DIR = include
+SPT_DIR = scripts
 OBJ_DIR = obj
 LIB_DIR = lib
-DIST_DIR = sdk_mo5
+DIST_DIR ?= sdk_mo5
 
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
@@ -31,8 +32,10 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HDRS)
 export_sdk: all
 	@mkdir -p $(DIST_DIR)/include
 	@mkdir -p $(DIST_DIR)/lib
+	@mkdir -p $(DIST_DIR)/scripts
 	cp $(INC_DIR)/*.h $(DIST_DIR)/include/
 	cp $(LIB_DIR)/$(LIB_NAME) $(DIST_DIR)/lib/
+	cp $(SPT_DIR)/* $(DIST_DIR)/scripts/
 	@echo "SDK exporté dans /$(DIST_DIR)"
 
 clean:
