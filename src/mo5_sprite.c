@@ -1,6 +1,9 @@
 #include "mo5_sprite.h"
 #include <cmoc.h>
 
+// Définition du tableau des offsets de lignes (initialisé dans mo5_init_graphic_mode)
+unsigned int row_offsets[SCREEN_HEIGHT];
+
 void mo5_init_graphic_mode(unsigned char color) {
     unsigned int i;
     for (i = 0; i < SCREEN_HEIGHT; i++) {

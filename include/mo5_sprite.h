@@ -31,7 +31,8 @@
 #define SCREEN_HEIGHT 200
 #define SCREEN_SIZE_BYTES (SCREEN_WIDTH_BYTES * SCREEN_HEIGHT)
 
-unsigned int row_offsets[SCREEN_HEIGHT];
+// Déclaration externe du tableau des offsets de lignes
+extern unsigned int row_offsets[SCREEN_HEIGHT];
 
 void mo5_init_graphic_mode(unsigned char color);
 void mo5_draw_sprite(int tx, int ty, unsigned char *form_data, unsigned char *color_data, int width_bytes, int height);
