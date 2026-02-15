@@ -10,6 +10,7 @@ used with the **CMOC** compiler.
 -   `obj/` : Temporary directory for object files (generated at
     compilation).
 -   `lib/` : Contains the final static library `libsdk_mo5.a`.
+-   `scripts/` : Contains Python utility scripts.
 
 ## 🛠️ Installation & Compilation
 
@@ -33,7 +34,7 @@ the .h and the .a), use:
 
 ## 📦 Library Contents
 
-The library is divided into three main modules:
+The library is divided into four main modules:
 
 1- Basic Input/Output (mo5_defs): - Direct access to the system monitor
 via swi interrupts. - Functions: mo5_getchar(), mo5_putchar(),
@@ -43,9 +44,33 @@ mo5_newline().
 keyboard. - Functions: fgets() (with Backspace support), puts(),
 clrscr().
 
-2- Character types (mo5_ctype): - Character validation compliant with C
+3- Character types (mo5_ctype): - Character validation compliant with C
 standards. - Functions: islower(), isupper(), isprint(), ispunct().
 
-## 📄 License
+4- Sprite display (mo5_sprite): - Functions for displaying sprites on screen.
+- Functions: mo5_init_graphic_mode(), mo5_draw_sprite(), mo5_clear_sprite().
+
+## � Python Utility Scripts
+
+The `scripts/` directory contains utility tools for working with Thomson MO5:
+
+### fd2sd.py
+Converts floppy disk images (`.fd`) generated with BootFloppyDisk to SD card format (`.sd`)
+compatible with SDDRIVE for direct use on Thomson MO5.
+
+**Usage:**
+```bash
+python3 scripts/fd2sd.py input.fd output.sd
+```
+
+### png2mo5.py
+Converts PNG images to Thomson MO5 sprite format and generates C code.
+
+**Usage:**
+```bash
+python3 scripts/png2mo5.py input.png output.h
+```
+
+## �📄 License
 
 This project is intended for retro-computing on Thomson MO5.
