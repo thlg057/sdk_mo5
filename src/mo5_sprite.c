@@ -41,7 +41,7 @@ void mo5_draw_sprite(int tx, int ty, unsigned char *form_data, unsigned char *co
     }
 }
 
-void clear_sprite(int tx, int ty, int width_bytes, int height) {
+void mo5_clear_sprite(int tx, int ty, int width_bytes, int height) {
     unsigned int offset;
     int i, j;
     

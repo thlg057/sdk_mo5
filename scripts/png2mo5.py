@@ -267,8 +267,13 @@ def convert_png_to_mo5_sprite(image_path, sprite_name=None, default_bg=0, quiet=
         form_data.append(form_line)
         color_data.append(color_line)
     
-    # Construire le code C
+    # Construire le code C avec include guards
+    guard_name = f"SPRITE_{sprite_name_clean.upper()}_H"
+
     output = []
+    output.append(f"#ifndef {guard_name}")
+    output.append(f"#define {guard_name}")
+    output.append("")
     output.append("// =============================================")
     output.append(f"// Sprite: {sprite_name_clean}")
     output.append(f"// Source: {os.path.basename(image_path)}")
@@ -277,6 +282,12 @@ def convert_png_to_mo5_sprite(image_path, sprite_name=None, default_bg=0, quiet=
     output.append("// Contrainte: 2 couleurs par groupe de 8 pixels")
     output.append("// =============================================")
     output.append("")
+
+    # Ajouter les defines pour les dimensions
+    output.append(f"#define SPRITE_{sprite_name_clean.upper()}_WIDTH_BYTES {bytes_per_line}")
+    output.append(f"#define SPRITE_{sprite_name_clean.upper()}_HEIGHT {height}")
+    output.append("")
+
     output.append("// Données de FORME (bitmap: 1=forme, 0=fond)")
     output.append(f"unsigned char sprite_{sprite_name_clean}_form[{bytes_per_line * height}] = {{")
     output.extend(form_data)
@@ -289,12 +300,12 @@ def convert_png_to_mo5_sprite(image_path, sprite_name=None, default_bg=0, quiet=
     output.append("};")
     output.append("")
     output.append(f"// Taille totale: {bytes_per_line * height} octets par tableau")
-    
+
     if total_blocks > 0:
         percentage = round(multi_color_blocks * 100.0 / total_blocks, 1)
         output.append(f"// Blocs multi-couleurs: {multi_color_blocks} / {total_blocks} ({percentage}%)")
     output.append("")
-    
+
     if color_stats:
         output.append("// Combinaisons de couleurs utilisées:")
         for key in sorted(color_stats.keys()):
@@ -306,39 +317,14 @@ def convert_png_to_mo5_sprite(image_path, sprite_name=None, default_bg=0, quiet=
             fg_name = MO5_PALETTE[fg]['Name']
             output.append(f"//   Fond={bg_name}, Forme={fg_name} : {count} blocs de 8 pixels")
         output.append("")
-    
+
     output.append("// FONCTION D'AFFICHAGE:")
-    output.append(f"// draw_sprite_multicolor(x, y, sprite_{sprite_name_clean}_form,")
-    output.append(f"//                        sprite_{sprite_name_clean}_color,")
-    output.append(f"//                        {bytes_per_line}, {height});")
+    output.append(f"// mo5_draw_sprite(x, y, sprite_{sprite_name_clean}_form,")
+    output.append(f"//                 sprite_{sprite_name_clean}_color,")
+    output.append(f"//                 SPRITE_{sprite_name_clean.upper()}_WIDTH_BYTES,")
+    output.append(f"//                 SPRITE_{sprite_name_clean.upper()}_HEIGHT);")
     output.append("")
-    output.append("// =============================================")
-    output.append("// FONCTION D'AFFICHAGE GÉNÉRIQUE")
-    output.append("// =============================================")
-    output.append("")
-    output.append("void draw_sprite_multicolor(int tx, int ty,")
-    output.append("                            unsigned char *form_data,")
-    output.append("                            unsigned char *color_data,")
-    output.append("                            int width_bytes, int height) {")
-    output.append("    unsigned int offset;")
-    output.append("    int i, j;")
-    output.append("    ")
-    output.append("    for (i = 0; i < height; i++) {")
-    output.append("        offset = row_offsets[ty + i] + tx;")
-    output.append("        ")
-    output.append("        // 1. Écrire les COULEURS (banque attributs)")
-    output.append("        *PRC &= ~0x01;")
-    output.append("        for (j = 0; j < width_bytes; j++) {")
-    output.append("            VRAM[offset + j] = color_data[i * width_bytes + j];")
-    output.append("        }")
-    output.append("        ")
-    output.append("        // 2. Écrire les FORMES (banque bitmap)")
-    output.append("        *PRC |= 0x01;")
-    output.append("        for (j = 0; j < width_bytes; j++) {")
-    output.append("            VRAM[offset + j] = form_data[i * width_bytes + j];")
-    output.append("        }")
-    output.append("    }")
-    output.append("}")
+    output.append(f"#endif // {guard_name}")
     
     img.close()
     
