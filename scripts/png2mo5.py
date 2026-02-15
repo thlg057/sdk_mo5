@@ -116,15 +116,16 @@ def get_dominant_colors(pixels, default_bg):
     }
 
 
-def convert_png_to_mo5_sprite(image_path, sprite_name=None, default_bg=0):
+def convert_png_to_mo5_sprite(image_path, sprite_name=None, default_bg=0, quiet=False):
     """Convertit une image PNG en sprite MO5"""
-    
+
     if not os.path.exists(image_path):
         print(f"[ERREUR] Le fichier '{image_path}' n'existe pas.")
         return None
-    
-    print(f"[INFO] Chargement de l'image: {image_path}")
-    
+
+    if not quiet:
+        print(f"[INFO] Chargement de l'image: {image_path}")
+
     try:
         img = Image.open(image_path)
         # Convertir en RGBA si nécessaire
@@ -133,16 +134,19 @@ def convert_png_to_mo5_sprite(image_path, sprite_name=None, default_bg=0):
     except Exception as e:
         print(f"[ERREUR] Erreur lors du chargement: {e}")
         return None
-    
+
     width, height = img.size
-    print(f"       Dimensions: {width}x{height} pixels")
-    
+    if not quiet:
+        print(f"       Dimensions: {width}x{height} pixels")
+
     # Vérifier que la largeur est multiple de 8
     original_width = width
     if width % 8 != 0:
-        print(f"[ATTENTION] Largeur ({width}) non multiple de 8.")
+        if not quiet:
+            print(f"[ATTENTION] Largeur ({width}) non multiple de 8.")
         width = (width // 8) * 8
-        print(f"            Ajustée à {width} pixels")
+        if not quiet:
+            print(f"            Ajustée à {width} pixels")
     
     bytes_per_line = width // 8
     
@@ -158,9 +162,10 @@ def convert_png_to_mo5_sprite(image_path, sprite_name=None, default_bg=0):
     
     # Remplacer les caractères non alphanumériques par des underscores (pour les noms de variables C)
     sprite_name_clean = ''.join(c if c.isalnum() or c == '_' else '_' for c in sprite_name)
-    
-    print("[INFO] Analyse de l'image...")
-    
+
+    if not quiet:
+        print("[INFO] Analyse de l'image...")
+
     # Tableaux pour stocker les données
     form_data = []
     color_data = []
@@ -366,44 +371,48 @@ Exemples:
     parser.add_argument('--bg-color', dest='bg_color', type=int, default=0,
                        choices=range(16), metavar='0-15',
                        help='Couleur de fond par défaut (0-15, défaut: 0=noir)')
-    
+    parser.add_argument('--quiet', '-q', action='store_true',
+                       help='Mode silencieux (affiche uniquement le message final)')
+
     args = parser.parse_args()
-    
-    print()
-    print("=" * 60)
-    print("  Convertisseur PNG -> Sprite Thomson MO5 (Multi-couleurs)")
-    print("  Format: 1 octet = 8 pixels (1 bit/pixel)")
-    print("  2 couleurs auto-détectées par groupe de 8 pixels")
-    print("=" * 60)
-    print()
-    
-    result = convert_png_to_mo5_sprite(args.image_path, args.sprite_name, args.bg_color)
+
+    if not args.quiet:
+        print()
+        print("=" * 60)
+        print("  Convertisseur PNG -> Sprite Thomson MO5 (Multi-couleurs)")
+        print("  Format: 1 octet = 8 pixels (1 bit/pixel)")
+        print("  2 couleurs auto-détectées par groupe de 8 pixels")
+        print("=" * 60)
+        print()
+
+    result = convert_png_to_mo5_sprite(args.image_path, args.sprite_name, args.bg_color, args.quiet)
     
     if result:
-        # Afficher le résultat
-        print("=" * 60)
-        print(result['Code'])
-        print("=" * 60)
-        print()
-        print("[OK] Sprite généré avec succès!")
-        print()
-        print("[INFO] Le sprite utilise 2 tableaux:")
-        print(f"       - sprite_{result['SpriteName']}_form  (bitmap 1 bit/pixel)")
-        print(f"       - sprite_{result['SpriteName']}_color (attributs couleur)")
-        print()
-        print("[STATS] Analyse:")
-        print(f"        Blocs multi-couleurs: {result['MultiColorBlocks']}/{result['TotalBlocks']}")
-        if result['TotalBlocks'] > 0:
-            percentage = round(result['MultiColorBlocks'] * 100.0 / result['TotalBlocks'], 1)
-            print(f"        Pourcentage: {percentage}%")
-        print()
-        print("[INFO] Utilisation:")
-        print(f"       draw_sprite_multicolor(x, y,")
-        print(f"                              sprite_{result['SpriteName']}_form,")
-        print(f"                              sprite_{result['SpriteName']}_color,")
-        print(f"                              {result['BytesPerLine']}, {result['Height']});")
-        print()
-        
+        if not args.quiet:
+            # Afficher le résultat
+            print("=" * 60)
+            print(result['Code'])
+            print("=" * 60)
+            print()
+            print("[OK] Sprite généré avec succès!")
+            print()
+            print("[INFO] Le sprite utilise 2 tableaux:")
+            print(f"       - sprite_{result['SpriteName']}_form  (bitmap 1 bit/pixel)")
+            print(f"       - sprite_{result['SpriteName']}_color (attributs couleur)")
+            print()
+            print("[STATS] Analyse:")
+            print(f"        Blocs multi-couleurs: {result['MultiColorBlocks']}/{result['TotalBlocks']}")
+            if result['TotalBlocks'] > 0:
+                percentage = round(result['MultiColorBlocks'] * 100.0 / result['TotalBlocks'], 1)
+                print(f"        Pourcentage: {percentage}%")
+            print()
+            print("[INFO] Utilisation:")
+            print(f"       draw_sprite_multicolor(x, y,")
+            print(f"                              sprite_{result['SpriteName']}_form,")
+            print(f"                              sprite_{result['SpriteName']}_color,")
+            print(f"                              {result['BytesPerLine']}, {result['Height']});")
+            print()
+
         # Sauvegarder
         if result['OutputPath']:
             # Si --name a été spécifié, utiliser ce chemin
@@ -417,27 +426,33 @@ Exemples:
             # Sinon, créer dans le même répertoire que l'image source
             source_path = Path(args.image_path)
             output_path = source_path.parent / (source_path.stem + '_sprite_mc.c')
-        
-        with open(output_path, 'w', encoding='ascii') as f:
+
+        with open(output_path, 'w', encoding='utf-8') as f:
             f.write(result['Code'])
-        
-        print(f"[OK] Sprite sauvegardé dans: {output_path}")
-        print()
-        
+
+        if not args.quiet:
+            print(f"[OK] Sprite sauvegardé dans: {output_path}")
+            print()
+
         # Tenter de copier dans le presse-papier (optionnel)
-        try:
-            import pyperclip
-            pyperclip.copy(result['Code'])
-            print("[OK] Code copié dans le presse-papier!")
-        except ImportError:
-            pass  # pyperclip n'est pas installé, ce n'est pas grave
-        except Exception:
-            pass  # Échec de la copie, ce n'est pas grave
+        if not args.quiet:
+            try:
+                import pyperclip
+                pyperclip.copy(result['Code'])
+                print("[OK] Code copié dans le presse-papier!")
+            except ImportError:
+                pass  # pyperclip n'est pas installé, ce n'est pas grave
+            except Exception:
+                pass  # Échec de la copie, ce n'est pas grave
+
+        # Message final (toujours affiché, même en mode quiet)
+        print(f"[OK] Fichier généré: {output_path}")
     else:
         print("[ERREUR] Échec de la conversion")
         sys.exit(1)
-    
-    print()
+
+    if not args.quiet:
+        print()
 
 
 if __name__ == '__main__':
