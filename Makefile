@@ -38,7 +38,7 @@ export_sdk: all
 	cp $(INC_DIR)/*.h $(DIST_DIR)/include/
 	cp $(LIB_DIR)/$(LIB_NAME) $(DIST_DIR)/lib/
 	cp $(SPT_DIR)/* $(DIST_DIR)/scripts/
-	cp $(DOCS_DIR)/* $(DIST_DIR)/docs/
+	cp -r $(DOCS_DIR)/* $(DIST_DIR)/docs/
 	@echo "SDK exporté dans /$(DIST_DIR)"
 
 clean:
