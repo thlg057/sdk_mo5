@@ -9,6 +9,7 @@ INC_DIR = include
 SPT_DIR = scripts
 OBJ_DIR = obj
 LIB_DIR = lib
+DOCS_DIR = docs
 DIST_DIR ?= sdk_mo5
 
 SRCS = $(wildcard $(SRC_DIR)/*.c)
@@ -33,9 +34,11 @@ export_sdk: all
 	@mkdir -p $(DIST_DIR)/include
 	@mkdir -p $(DIST_DIR)/lib
 	@mkdir -p $(DIST_DIR)/scripts
+	@mkdir -p $(DIST_DIR)/docs
 	cp $(INC_DIR)/*.h $(DIST_DIR)/include/
 	cp $(LIB_DIR)/$(LIB_NAME) $(DIST_DIR)/lib/
 	cp $(SPT_DIR)/* $(DIST_DIR)/scripts/
+	cp $(DOCS_DIR)/* $(DIST_DIR)/docs/
 	@echo "SDK exporté dans /$(DIST_DIR)"
 
 clean:
