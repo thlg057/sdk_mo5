@@ -1,3 +1,12 @@
+/**
+ * @file
+ * @brief Video initialization, screen clear, rectangle fill and VBL synchronization.
+ *
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 Thierry Le Got
+ */
+
+
 #include "mo5_video.h"
 
 // ============================================================================

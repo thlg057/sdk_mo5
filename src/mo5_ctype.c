@@ -1,3 +1,12 @@
+/**
+ * @file
+ * @brief Implementation of character classification functions (islower, isupper, isprint, ispunct).
+ *
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 Thierry Le Got
+ */
+
+
 #include "mo5_ctype.h"
 
 int islower(char c) {

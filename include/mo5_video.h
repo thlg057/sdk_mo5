@@ -1,3 +1,12 @@
+/**
+ * @file
+ * @brief Video hardware abstraction — VRAM registers, 16-color palette, screen dimensions, VBL sync.
+ *
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 Thierry Le Got
+ */
+
+
 #ifndef MO5_VIDEO_H
 #define MO5_VIDEO_H
 

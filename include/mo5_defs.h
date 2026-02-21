@@ -1,3 +1,12 @@
+/**
+ * @file
+ * @brief Low-level keyboard and display I/O primitives via SWI interrupts.
+ *
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 Thierry Le Got
+ */
+
+
 #ifndef MO5_DEFS_H
 #define MO5_DEFS_H
 

@@ -1,3 +1,12 @@
+/**
+ * @file
+ * @brief Sprite rendering and actor movement with optimized differential VRAM writes.
+ *
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 Thierry Le Got
+ */
+
+
 #include "mo5_sprite.h"   // inclut mo5_video.h transitivement
 
 // ============================================================================

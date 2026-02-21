@@ -1,3 +1,12 @@
+/**
+ * @file
+ * @brief Sprite engine — MO5_Sprite and MO5_Actor structures, low-level and actor-level drawing API.
+ *
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 Thierry Le Got
+ */
+
+
 #ifndef MO5_SPRITE_H
 #define MO5_SPRITE_H
 

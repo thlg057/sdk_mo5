@@ -1,3 +1,9 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Thierry Le Got
+#
+# Build system for the MO5 SDK static library (libsdk_mo5.a).
+
+
 CC = cmoc
 AR = lwar
 # Utilisation de --compile à la place de -c pour plus de clarté avec CMOC

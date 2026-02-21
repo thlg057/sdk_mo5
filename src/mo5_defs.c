@@ -1,3 +1,12 @@
+/**
+ * @file
+ * @brief Implementation of low-level I/O via SWI (getchar, putchar, newline, key wait).
+ *
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 Thierry Le Got
+ */
+
+
 #include "mo5_defs.h"
 
 char mo5_getchar(void)
@@ -10,7 +19,7 @@ char mo5_getchar(void)
 
 //int code = (int)ch;
 void mo5_putchar(char c)
-{   
+{
     asm {
         ldb c
         swi
