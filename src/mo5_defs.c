@@ -41,7 +41,7 @@ void mo5_wait_key(char key)
     } while (ch != key);
 }
 
-char wait_for_key(void) {
+char mo5_wait_for_key(void) {
     char ch;
     do {
         ch = mo5_getchar();

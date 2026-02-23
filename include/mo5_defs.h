@@ -54,6 +54,6 @@ void mo5_wait_key(char key);
 /**
  * @brief Waits for a key press and returns it (uppercase).
  */
-char wait_for_key(void);
+char mo5_wait_for_key(void);
 
 #endif
