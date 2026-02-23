@@ -1,3 +1,12 @@
+/**
+ * @file
+ * @brief Implementation of string I/O with echo and backspace support (fgets, fputs, puts, clrscr).
+ *
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 Thierry Le Got
+ */
+
+
 #include "mo5_defs.h"
 #include <cmoc.h>
 #include "mo5_stdio.h"

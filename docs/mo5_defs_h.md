@@ -65,35 +65,30 @@ fcb $02
 
 Envoie `MO5_ENTER_CHAR` (13) suivi de `MO5_LINE_FEED` (10) via `mo5_putchar`. Produit un saut de ligne complet CR+LF.
 
----
+### `void mo5_wait_key(char key)`
 
-## Pattern : lecture bloquante d'une touche spécifique
-
-Pour attendre une touche précise, implémenter dans ton projet :
+Attend qu'une touche précise soit pressée. Ignore tous les autres caractères tant que la touche attendue n'est pas saisie.
 
 ```c
-void mo5_wait_key(char key)
-{
-    char ch;
-    do {
-        ch = mo5_getchar();
-    } while (ch != key);
-}
+char ch;
+do {
+    ch = getchar();
+} while (ch != key);
 ```
 
-Pour attendre n'importe quelle touche :
+> ℹ️ Utiliser cette fonction pour synchroniser l'exécution sur une touche connue (ex : confirmation, navigation menu).
+
+### `char wait_for_key(void)`
+
+Attend n'importe quelle touche via `mo5_getchar()` et retourne le caractère.
 
 ```c
-char mo5_wait_any_key(void)
-{
-    char ch;
-    do {
-        ch = mo5_getchar();
-    } while (ch == 0);
-    return ch;
-}
+char ch;
+do {
+    ch = mo5_getchar();
+} while (ch == 0);
+return ch;
 ```
-
 ---
 
 ## Notes

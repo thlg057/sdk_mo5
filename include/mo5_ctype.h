@@ -1,3 +1,12 @@
+/**
+ * @file
+ * @brief Character classification functions (islower, isupper, isprint, ispunct).
+ *
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 Thierry Le Got
+ */
+
+
 #ifndef CTYPE_H
 #define CTYPE_H
 

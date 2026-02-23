@@ -318,11 +318,16 @@ def convert_png_to_mo5_sprite(image_path, sprite_name=None, default_bg=0, quiet=
             output.append(f"//   Fond={bg_name}, Forme={fg_name} : {count} blocs de 8 pixels")
         output.append("")
 
-    output.append("// FONCTION D'AFFICHAGE:")
-    output.append(f"// mo5_draw_sprite(x, y, sprite_{sprite_name_clean}_form,")
-    output.append(f"//                 sprite_{sprite_name_clean}_color,")
-    output.append(f"//                 SPRITE_{sprite_name_clean.upper()}_WIDTH_BYTES,")
-    output.append(f"//                 SPRITE_{sprite_name_clean.upper()}_HEIGHT);")
+    # Macro d'initialisation MO5_Sprite
+    sn = sprite_name_clean
+    SN = sprite_name_clean.upper()
+    output.append(f"// Macro d'initialisation pour MO5_Sprite (voir mo5_sprite.h)")
+    output.append(f"#define SPRITE_{SN}_INIT \\")
+    output.append(f"    {{ sprite_{sn}_form, sprite_{sn}_color, \\")
+    output.append(f"      SPRITE_{SN}_WIDTH_BYTES, SPRITE_{SN}_HEIGHT }}")
+    output.append("")
+    output.append(f"// Utilisation:")
+    output.append(f"//   MO5_Sprite sprite_{sn} = SPRITE_{SN}_INIT;")
     output.append("")
     output.append(f"#endif // {guard_name}")
     

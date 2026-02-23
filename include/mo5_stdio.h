@@ -1,17 +1,9 @@
-/*
- * MO5 Mini-stdio
- * -------------------------
- * Basic input/output library for Thomson MO5.
- * Provides simple character and string I/O functions.
+/**
+ * @file
+ * @brief High-level string and character I/O (fgets, fputs, puts, clrscr).
  *
- * Features:
- * - putchar, fputs, puts       : Output characters and strings
- * - print integers (signed/unsigned/hex) : Optional integer printing routines
- * - getchar, fgets             : Input characters and strings
- * - Generic print and printnl macros for convenience
- *
- * Note: This is a minimal implementation intended for educational or
- * embedded usage on the MO5 platform.
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 Thierry Le Got
  */
 
 #ifndef MO5_STDIO_H

@@ -1,3 +1,12 @@
+/**
+ * @file
+ * @brief Low-level keyboard and display I/O primitives via SWI interrupts.
+ *
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 Thierry Le Got
+ */
+
+
 #ifndef MO5_DEFS_H
 #define MO5_DEFS_H
 
@@ -22,18 +31,29 @@ typedef enum {
  * @return The character read.
  * @note Blocking call: waits until a character is available.
  */
-char mo5_getchar(void); 
+char mo5_getchar(void);
 
 /**
  * @brief Writes a single character to the output.
  * @param c Character to write.
  */
-void mo5_putchar(char c); 
+void mo5_putchar(char c);
 
 /**
  * @brief Outputs a newline sequence to the display.
  * @note Advances the cursor to the next line according to the MO5 display rules.
  */
 void mo5_newline(void);
+
+/**
+ * @brief Waits for a specific key to be pressed (ignores all other characters).
+ * @param key The expected key.
+ */
+void mo5_wait_key(char key);
+
+/**
+ * @brief Waits for a key press and returns it (uppercase).
+ */
+char mo5_wait_for_key(void);
 
 #endif
