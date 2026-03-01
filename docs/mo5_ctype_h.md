@@ -7,28 +7,28 @@
 ## Dépendance
 
 ```c
-#include "mo5_defs.h"  // inclus automatiquement
+#include "mo5_ctype.h"   // aucune dépendance externe
 ```
 
 ---
 
 ## Fonctions
 
-### `int islower(char c)`
+### `unsigned char islower(char c)`
 
-Retourne `TRUE` si `c` est une lettre minuscule (`'a'`–`'z'`), `FALSE` sinon.
+Retourne `1` si `c` est une lettre minuscule (`'a'`–`'z'`), `0` sinon.
 
-### `int isupper(char c)`
+### `unsigned char isupper(char c)`
 
-Retourne `TRUE` si `c` est une lettre majuscule (`'A'`–`'Z'`), `FALSE` sinon.
+Retourne `1` si `c` est une lettre majuscule (`'A'`–`'Z'`), `0` sinon.
 
-### `int isprint(char c)`
+### `unsigned char isprint(char c)`
 
-Retourne `TRUE` si `c` est un caractère imprimable (ASCII 32–126 inclus), `FALSE` sinon. Les caractères de contrôle (0–31) et DEL (127+) retournent `FALSE`.
+Retourne `1` si `c` est un caractère imprimable (ASCII 32–126 inclus), `0` sinon. Les caractères de contrôle (0–31) et DEL (127+) retournent `0`.
 
-### `int ispunct(char c)`
+### `unsigned char ispunct(char c)`
 
-Retourne `TRUE` si `c` est un caractère de ponctuation, `FALSE` sinon.
+Retourne `1` si `c` est un caractère de ponctuation, `0` sinon.
 
 Plages ASCII couvertes :
 
@@ -38,6 +38,16 @@ Plages ASCII couvertes :
 | 58–64 | `: ; < = > ? @` |
 | 91–96 | `[ \ ] ^ _ \`` |
 | 123–126 | `{ \| } ~` |
+
+---
+
+## Note sur les types de retour
+
+Les fonctions retournent `unsigned char` (valeur `0` ou `1`) et non `int` comme les équivalents CMOC. Ce choix évite les opérations 16 bits inutiles sur le 6809. Toute valeur non nulle est considérée vraie en C, le code existant reste compatible :
+
+```c
+if (isprint(ch)) { ... }   // fonctionne identiquement
+```
 
 ---
 

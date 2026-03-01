@@ -1,15 +1,17 @@
-# `mo5_sprite` — Sprites et Acteurs MO5
+# `mo5_sprite` — Rendu sprite opaque sur fond uni
 
-> Structures de données, pipeline PNG → sprite, API de rendu et gestion des entités de jeu
+> API de dessin et déplacement de sprites pour fond noir (ou uni). Écrit directement en VRAM sans préserver le fond existant.
 
 ---
 
 ## Rôle du module
 
-`mo5_sprite` fournit deux niveaux d'abstraction pour afficher et déplacer des sprites :
+`mo5_sprite` fournit deux niveaux d'abstraction pour afficher et déplacer des sprites sur un **fond uni initialisé à `0x00`** :
 
 - **API bas niveau** (`mo5_draw_sprite`, `mo5_clear_sprite`, `mo5_move_sprite`) — accès direct pour les cas spéciaux (HUD, tiles de décor)
 - **API Actor** (`mo5_actor_*`) — gestion complète d'une entité de jeu avec position et rendu optimisé
+
+Pour un sprite se déplaçant sur un **décor coloré**, utiliser `mo5_sprite_bg.h` à la place.
 
 ```
 ┌──────────────────────────────────┐
@@ -22,7 +24,9 @@
 │        API bas niveau            │  ← cas spéciaux uniquement
 │   mo5_draw/clear/move_sprite     │
 ├──────────────────────────────────┤
-│          mo5_video               │  ← VRAM, PRC, row_offsets
+│       mo5_sprite_types.h         │  ← MO5_Sprite, MO5_Actor, MO5_Position
+├──────────────────────────────────┤
+│          mo5_video.h             │  ← VRAM, PRC, row_offsets
 └──────────────────────────────────┘
 ```
 
@@ -31,60 +35,7 @@
 ## Inclusion
 
 ```c
-#include "mo5_sprite.h"   // inclut mo5_video.h automatiquement
-```
-
----
-
-## Structures
-
-### `MO5_Position`
-
-```c
-typedef struct {
-    int x;   // en octets  (1 octet = 8 pixels horizontaux)
-    int y;   // en pixels
-} MO5_Position;
-```
-
-> **Attention :** `x` est en **octets**, pas en pixels. Un sprite de 16px de large centré sur l'écran (40 octets) : `x = (40 - 2) / 2 = 19`, pas `(320 - 16) / 2`.
-
-### `MO5_Sprite`
-
-Données graphiques statiques d'un sprite. **Ressource partageable** — ne jamais dupliquer.
-
-```c
-typedef struct {
-    unsigned char *form;    // Bitmap 1 bit/pixel (1=forme, 0=fond)
-    unsigned char *color;   // Attributs couleur — 1 octet par groupe de 8 pixels (FFFFBBBB)
-    int width_bytes;        // Largeur en octets
-    int height;             // Hauteur en lignes pixels
-} MO5_Sprite;
-```
-
-### `MO5_Actor`
-
-Entité du jeu : un sprite + une position courante + l'ancienne position.
-
-```c
-typedef struct {
-    const MO5_Sprite *sprite;   // Pointeur partageable vers les données graphiques
-    MO5_Position      pos;      // Position courante
-    MO5_Position      old_pos;  // Position précédente (gérée automatiquement)
-} MO5_Actor;
-```
-
-**Plusieurs acteurs, un seul sprite :**
-
-```c
-// ✅ Correct : 5 ennemis, données graphiques chargées une seule fois
-MO5_Sprite spr_ennemi = SPRITE_ENNEMI_INIT;
-
-MO5_Actor ennemis[5];
-for (i = 0; i < 5; i++)
-    ennemis[i].sprite = &spr_ennemi;   // tous pointent vers le même sprite
-
-// ❌ Mauvais : duplication inutile de 128+ octets par ennemi
+#include "mo5_sprite.h"   // inclut mo5_sprite_types.h et mo5_video.h automatiquement
 ```
 
 ---
@@ -122,7 +73,6 @@ Pour `assets/perso.png`, le fichier `assets/perso.h` contiendra :
 unsigned char sprite_perso_form[128]  = { /* données bitmap */ };
 unsigned char sprite_perso_color[128] = { /* attributs couleur */ };
 
-// Macro d'initialisation — à utiliser dans le code
 #define SPRITE_PERSO_INIT \
     { sprite_perso_form, sprite_perso_color, \
       SPRITE_PERSO_WIDTH_BYTES, SPRITE_PERSO_HEIGHT }
@@ -172,7 +122,7 @@ Dessine le sprite à `pos`. À utiliser **uniquement pour le premier affichage**
 void mo5_actor_clear(const MO5_Actor *actor);
 ```
 
-Efface le sprite à `pos`. Utiliser pour retirer définitivement un acteur de l'écran (mort, collecte d'objet...).
+Efface le sprite à `pos`. Passe unique sur la banque couleur (fond noir garanti — la banque forme n'est pas touchée). Utiliser pour retirer définitivement un acteur de l'écran.
 
 ---
 
@@ -187,7 +137,7 @@ Déplace l'acteur vers `(new_x, new_y)` de façon **optimisée** :
 - Met à jour `old_pos` et `pos` automatiquement
 - Ne cleare que la zone qui ne sera pas recouverte par le nouveau dessin
 
-**Gain typique (sprite 16×16, déplacement de 8px) :**
+**Gain typique (sprite 16×16, déplacement de 1 octet) :**
 
 | Approche | Écritures VRAM | Économie |
 |---|---|---|
@@ -226,12 +176,8 @@ switch (key) {
 }
 
 // Clamp sur new_pos AVANT le move
-int max_x = SCREEN_WIDTH_BYTES - player.sprite->width_bytes;
-int max_y = SCREEN_HEIGHT      - player.sprite->height;
-if (new_pos.x < 0)      new_pos.x = 0;
-if (new_pos.x > max_x)  new_pos.x = max_x;
-if (new_pos.y < 0)      new_pos.y = 0;
-if (new_pos.y > max_y)  new_pos.y = max_y;
+new_pos.x = clamp(new_pos.x, 0, SCREEN_WIDTH_BYTES - player.sprite->width_bytes);
+new_pos.y = clamp(new_pos.y, 0, SCREEN_HEIGHT      - player.sprite->height);
 
 // Déplacement optimisé (no-op si position identique)
 mo5_actor_move(&player, new_pos.x, new_pos.y);
@@ -251,11 +197,15 @@ void mo5_draw_sprite(int tx, int ty,
                      int width_bytes, int height);
 ```
 
+Écrit les banques couleur et forme directement. Le fond du sprite écrase la VRAM existante.
+
 ### `mo5_clear_sprite`
 
 ```c
 void mo5_clear_sprite(int tx, int ty, int width_bytes, int height);
 ```
+
+Remet la banque couleur à `0x00`. La banque forme n'est pas touchée — avec une couleur `0x00` (foreground et background noirs), le résultat visuel est noir quelle que soit la valeur de la forme.
 
 ### `mo5_move_sprite`
 
@@ -270,16 +220,6 @@ Fallback automatique sur `clear` + `draw` si le déplacement est supérieur à l
 ---
 
 ## Pièges courants
-
-**Ne pas initialiser `old_pos`**
-```c
-// ❌ old_pos indéfinie → premier move() peut clearer n'importe où
-player.pos.x = 10; player.pos.y = 20;
-
-// ✅
-player.pos.x = 10; player.pos.y = 20;
-player.old_pos = player.pos;
-```
 
 **Confondre x en octets et x en pixels**
 ```c
@@ -308,6 +248,17 @@ mo5_actor_clamp(&player);   // trop tard
 // ✅ clamp sur new_pos avant le move (voir pattern ci-dessus)
 ```
 
+**Utiliser mo5_sprite sur un fond coloré**
+```c
+// ❌ la couleur de fond du décor est écrasée par mo5_draw_sprite
+mo5_actor_draw(&player);   // sur un paysage coloré → fond abîmé
+
+// ✅ utiliser mo5_sprite_bg.h pour un décor coloré
+mo5_actor_draw_bg(&player);
+```
+
 ---
 
-*Voir `sdk-video.md` pour la palette, les registres et la synchronisation VBL.*
+*Voir `mo5_sprite_bg_h.md` pour le rendu sur fond coloré.*
+*Voir `mo5_sprite_types_h.md` pour les structures `MO5_Sprite`, `MO5_Actor`, `MO5_Position`.*
+*Voir `mo5_video_h.md` pour la palette, les registres et la synchronisation VBL.*
