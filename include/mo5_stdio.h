@@ -11,45 +11,33 @@
 
 #include "mo5_defs.h"
 
-/* Character input/output functions */
-
-/**
- * @brief Reads a single character from the input.
- * @return The character read.
- * @note Blocking call: waits until a character is available.
- * @details public mapping, expands char mo5_getchar()
- */
+/** Maps getchar to mo5_getchar. Blocking: waits until a character is available. */
 #define getchar mo5_getchar
 
-/* String input functions */
+/**
+ * Reads a string from input into a buffer, with echo and backspace support.
+ *
+ * @param buffer      Destination buffer.
+ * @param max_length  Maximum number of characters to read (excluding null terminator).
+ * @return            Number of characters read.
+ */
+unsigned char fgets(char *buffer, unsigned char max_length);
 
 /**
- * @brief Reads a string from input into a buffer.
- * @param buffer Destination buffer to store input string.
- * @param max_length Maximum number of characters to read (including null terminator).
- * @return Number of characters read, or -1 on error.
+ * Writes a null-terminated string to the output.
+ *
+ * @param s  String to write.
  */
-int fgets(char* buffer, int max_length);
-
-/* String output functions */
+void fputs(const char *s);
 
 /**
- * @brief Writes a null-terminated string to the output.
- * @param s String to write.
+ * Writes a null-terminated string followed by a newline.
+ *
+ * @param s  String to write.
  */
-void fputs(const char* s);
+void puts(const char *s);
 
-/**
- * @brief Writes a null-terminated string followed by a newline.
- * @param s String to write.
- */
-void puts(const char* s);
-
-/* Screen control functions */
-
-/**
- * @brief Clears the screen and resets cursor position.
- */
+/** Clears the screen and resets the cursor position. */
 void clrscr(void);
 
-#endif
+#endif // MO5_STDIO_H

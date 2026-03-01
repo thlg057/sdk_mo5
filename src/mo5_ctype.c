@@ -1,29 +1,31 @@
 /**
  * @file
- * @brief Implementation of character classification functions (islower, isupper, isprint, ispunct).
+ * @brief Implementation of character classification functions.
+ *
+ * Retourne unsigned char au lieu de int — 0 ou 1 suffit,
+ * évite les opérations 16 bits sur 6809.
  *
  * SPDX-License-Identifier: MIT
  * Copyright (c) 2026 Thierry Le Got
  */
 
-
 #include "mo5_ctype.h"
 
-int islower(char c) {
-    return (c >= 'a' && c <= 'z') ? TRUE : FALSE;
+unsigned char islower(char c) {
+    return (c >= 'a' && c <= 'z') ? 1 : 0;
 }
 
-int isupper(char c) {
-    return (c >= 'A' && c <= 'Z') ? TRUE : FALSE;
+unsigned char isupper(char c) {
+    return (c >= 'A' && c <= 'Z') ? 1 : 0;
 }
 
-int isprint(char c) {
-    return (c >= 32 && c <= 126) ? TRUE : FALSE;
+unsigned char isprint(char c) {
+    return (c >= 32 && c <= 126) ? 1 : 0;
 }
 
-int ispunct(char c) {
+unsigned char ispunct(char c) {
     return ((c >= 33 && c <= 47)  ||
             (c >= 58 && c <= 64)  ||
             (c >= 91 && c <= 96)  ||
-            (c >= 123 && c <= 126)) ? TRUE : FALSE;
+            (c >= 123 && c <= 126)) ? 1 : 0;
 }

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Helpers.
+ * @brief Utility helpers.
  *
  * SPDX-License-Identifier: MIT
  * Copyright (c) 2026 Thierry Le Got
@@ -11,16 +11,15 @@
 
 /**
  * Clamps @p value to the range [@p min, @p max].
- *
- * Returns @p min if @p value < @p min,
- *         @p max if @p value > @p max,
- *         @p value otherwise.
+ * Uses unsigned char — suitable for MO5 screen coordinates (0-199 max).
  *
  * @param value  Value to clamp.
  * @param min    Lower bound (inclusive).
  * @param max    Upper bound (inclusive).
  * @return       Clamped value in [min, max].
  */
-int mo5_clamp(int value, int min, int max);
+unsigned char mo5_clamp(unsigned char value,
+                        unsigned char min,
+                        unsigned char max);
 
-#endif
+#endif // MO5_UTILS_H
