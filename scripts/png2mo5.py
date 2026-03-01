@@ -7,7 +7,7 @@ Format: 1 octet = 8 pixels de 1 bit (forme/fond)
 Génère 2 tableaux: FORME (bitmap) et COULEUR (attributs par groupe de 8 pixels)
 
 Usage:
-    python png_to_mo5_v2.py image.png [--name SPRITE_NAME] [--bg-color 0-15]
+    python png_to_mo5_v2.py image.png [--name SPRITE_NAME] [--bg-color 0-15] [--transparent]
 """
 
 import argparse
@@ -115,8 +115,22 @@ def get_dominant_colors(pixels, default_bg):
         'IsSingleColor': False
     }
 
+def get_dominant_colors_transparent(pixels):
+    """Version spécifique : force le fond à 0 pour mo5_sprite_bg"""
+    color_count = {}
+    for pixel in pixels:
+        r, g, b, a = pixel
+        if a < 128: continue
+        color = get_closest_mo5_color(r, g, b, a)
+        if color is not None:
+            color_count[color] = color_count.get(color, 0) + 1
+    if not color_count:
+        return {'Background': 0, 'Foreground': 0, 'IsSingleColor': True}
+    sorted_colors = sorted(color_count.items(), key=lambda x: x[1], reverse=True)
+    fg = sorted_colors[0][0]
+    return {'Background': 0, 'Foreground': fg, 'IsSingleColor': True}
 
-def convert_png_to_mo5_sprite(image_path, sprite_name=None, default_bg=0, quiet=False):
+def convert_png_to_mo5_sprite(image_path, sprite_name=None, default_bg=0, quiet=False, transparent=False):
     """Convertit une image PNG en sprite MO5"""
 
     if not os.path.exists(image_path):
@@ -193,7 +207,11 @@ def convert_png_to_mo5_sprite(image_path, sprite_name=None, default_bg=0, quiet=
                     pixel_group.append((0, 0, 0, 0))
             
             # Déterminer les 2 couleurs dominantes
-            colors = get_dominant_colors(pixel_group, default_bg)
+            if transparent:
+                colors = get_dominant_colors_transparent(pixel_group)
+            else:
+                colors = get_dominant_colors(pixel_group, default_bg)
+                
             bg = colors['Background']
             fg = colors['Foreground']
             
@@ -362,6 +380,8 @@ Exemples:
     parser.add_argument('--bg-color', dest='bg_color', type=int, default=0,
                        choices=range(16), metavar='0-15',
                        help='Couleur de fond par défaut (0-15, défaut: 0=noir)')
+    parser.add_argument('--transparent', action='store_true',
+                       help='Force le fond à 0 pour mo5_sprite_bg')
     parser.add_argument('--quiet', '-q', action='store_true',
                        help='Mode silencieux (affiche uniquement le message final)')
 
@@ -376,7 +396,7 @@ Exemples:
         print("=" * 60)
         print()
 
-    result = convert_png_to_mo5_sprite(args.image_path, args.sprite_name, args.bg_color, args.quiet)
+    result = convert_png_to_mo5_sprite(args.image_path, args.sprite_name, args.bg_color, args.quiet, args.transparent)
     
     if result:
         if not args.quiet:
