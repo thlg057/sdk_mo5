@@ -9,94 +9,97 @@
 #include "mo5_actor_dr.h"
 
 // ============================================================================
+// HELPERS INTERNES
+// ============================================================================
+
+/*
+ * Copie width_bytes*height octets entre VRAM et un buffer.
+ * dir=0 : VRAM → buf (save)
+ * dir=1 : buf → VRAM (restore)
+ * PRC doit être positionné avant l'appel.
+ */
+static void dr_transfer(unsigned char tx,          unsigned char ty,
+                        unsigned char width_bytes, unsigned char height,
+                        unsigned char *buf,        unsigned char dir)
+{
+    unsigned char *row      = VRAM + (unsigned int)ty * SCREEN_WIDTH_BYTES + tx;
+    unsigned char  rows_left = height;
+
+    while (rows_left--) {
+        unsigned char *p   = row;
+        unsigned char  col = width_bytes;
+
+        if (dir) {
+            while (col--) *p++ = *buf++;   /* restore : buf → VRAM */
+        } else {
+            while (col--) *buf++ = *p++;   /* save    : VRAM → buf */
+        }
+
+        row += SCREEN_WIDTH_BYTES;
+    }
+}
+
+// ============================================================================
 // FONCTIONS INTERNES
 // ============================================================================
 
-/**
- * Sauvegarde la zone VRAM (couleur + forme) à (tx, ty) dans les buffers.
- */
-static void dr_save(MO5_Actor_DR *actor) {
-    unsigned int   offset;
-    unsigned char  i, j;
-    unsigned char  w = actor->sprite->width_bytes;
-    unsigned char  h = actor->sprite->height;
-    unsigned char  x = actor->pos.x;
-    unsigned char  y = actor->pos.y;
-    unsigned char *dst_color = actor->save_color;
-    unsigned char *dst_form  = actor->save_form;
+static void dr_save(MO5_Actor_DR *actor)
+{
+    unsigned char w = actor->sprite->width_bytes;
+    unsigned char h = actor->sprite->height;
+    unsigned char x = actor->pos.x;
+    unsigned char y = actor->pos.y;
 
-    *PRC &= ~0x01;  // banque couleur
-    for (i = 0; i < h; i++) {
-        offset = row_offsets[y + i] + x;
-        for (j = 0; j < w; j++)
-            *dst_color++ = VRAM[offset + j];
-    }
+    *PRC &= ~0x01;
+    dr_transfer(x, y, w, h, actor->save_color, 0);
 
-    *PRC |= 0x01;   // banque forme
-    for (i = 0; i < h; i++) {
-        offset = row_offsets[y + i] + x;
-        for (j = 0; j < w; j++)
-            *dst_form++ = VRAM[offset + j];
-    }
+    *PRC |= 0x01;
+    dr_transfer(x, y, w, h, actor->save_form,  0);
 }
 
-/**
- * Restaure la zone VRAM (couleur + forme) à (tx, ty) depuis les buffers.
- */
-static void dr_restore(MO5_Actor_DR *actor) {
-    unsigned int   offset;
-    unsigned char  i, j;
-    unsigned char  w = actor->sprite->width_bytes;
-    unsigned char  h = actor->sprite->height;
-    unsigned char  x = actor->pos.x;
-    unsigned char  y = actor->pos.y;
-    unsigned char *src_color = actor->save_color;
-    unsigned char *src_form  = actor->save_form;
+static void dr_restore(MO5_Actor_DR *actor)
+{
+    unsigned char w = actor->sprite->width_bytes;
+    unsigned char h = actor->sprite->height;
+    unsigned char x = actor->pos.x;
+    unsigned char y = actor->pos.y;
 
-    *PRC &= ~0x01;  // banque couleur
-    for (i = 0; i < h; i++) {
-        offset = row_offsets[y + i] + x;
-        for (j = 0; j < w; j++)
-            VRAM[offset + j] = *src_color++;
-    }
+    *PRC &= ~0x01;
+    dr_transfer(x, y, w, h, actor->save_color, 1);
 
-    *PRC |= 0x01;   // banque forme
-    for (i = 0; i < h; i++) {
-        offset = row_offsets[y + i] + x;
-        for (j = 0; j < w; j++)
-            VRAM[offset + j] = *src_form++;
-    }
+    *PRC |= 0x01;
+    dr_transfer(x, y, w, h, actor->save_form,  1);
 }
 
-/**
- * Dessine le sprite à la position courante (transparence via fg).
- */
-static void dr_draw(MO5_Actor_DR *actor) {
-    unsigned int   offset;
-    unsigned char  i, j;
-    unsigned char  w = actor->sprite->width_bytes;
-    unsigned char  h = actor->sprite->height;
-    unsigned char  x = actor->pos.x;
-    unsigned char  y = actor->pos.y;
+static void dr_draw(MO5_Actor_DR *actor)
+{
+    unsigned char *row       = VRAM + (unsigned int)actor->pos.y * SCREEN_WIDTH_BYTES
+                                    + actor->pos.x;
     unsigned char *color_src = actor->sprite->color;
     unsigned char *form_src  = actor->sprite->form;
-    unsigned char  fg;
+    unsigned char  rows_left = actor->sprite->height;
 
-    for (i = 0; i < h; i++) {
-        offset = row_offsets[y + i] + x;
-        for (j = 0; j < w; j++) {
-            fg = *color_src & 0xF0;
+    while (rows_left--) {
+        unsigned char *p   = row;
+        unsigned char  col = actor->sprite->width_bytes;
+
+        while (col--) {
+            unsigned char fg = *color_src & 0xF0;
+
             if (fg) {
-                // Banque couleur : bg du décor conservé, fg du sprite injecté
                 *PRC &= ~0x01;
-                VRAM[offset + j] = (VRAM[offset + j] & 0x0F) | fg;
-                // Banque forme : bits du sprite posés sans effacer le décor
+                *p = (*p & 0x0F) | fg;
+
                 *PRC |= 0x01;
-                VRAM[offset + j] |= *form_src;
+                *p |= *form_src;
             }
+
+            p++;
             color_src++;
             form_src++;
         }
+
+        row += SCREEN_WIDTH_BYTES;
     }
 }
 
@@ -105,7 +108,8 @@ static void dr_draw(MO5_Actor_DR *actor) {
 // ============================================================================
 
 void mo5_actor_dr_init(MO5_Actor_DR *actor, const MO5_Sprite *sprite,
-                       unsigned char x, unsigned char y) {
+                       unsigned char x, unsigned char y)
+{
     actor->sprite = sprite;
     actor->pos.x  = x;
     actor->pos.y  = y;
@@ -113,16 +117,19 @@ void mo5_actor_dr_init(MO5_Actor_DR *actor, const MO5_Sprite *sprite,
     dr_draw(actor);
 }
 
-void mo5_actor_dr_restore(MO5_Actor_DR *actor) {
+void mo5_actor_dr_restore(MO5_Actor_DR *actor)
+{
     dr_restore(actor);
 }
 
-void mo5_actor_dr_save_draw(MO5_Actor_DR *actor) {
+void mo5_actor_dr_save_draw(MO5_Actor_DR *actor)
+{
     dr_save(actor);
     dr_draw(actor);
 }
 
-void mo5_actor_dr_move(MO5_Actor_DR *actor, unsigned char x, unsigned char y) {
+void mo5_actor_dr_move(MO5_Actor_DR *actor, unsigned char x, unsigned char y)
+{
     actor->pos.x = x;
     actor->pos.y = y;
 }
