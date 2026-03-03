@@ -98,19 +98,22 @@ def get_dominant_colors(pixels, default_bg):
             'IsSingleColor': True
         }
     
-    # Trier par fréquence
-    sorted_colors = sorted(color_count.items(), key=lambda x: x[1], reverse=True)
-    
-    # Les 2 couleurs les plus fréquentes
-    color1 = sorted_colors[0][0]
-    color2 = sorted_colors[1][0]
-    
-    # La plus fréquente est généralement le fond
-    bg = color1
-    fg = color2
-    
+    # Le fond est toujours default_bg — chercher la couleur fg la plus fréquente
+    # parmi les couleurs non-fond
+    non_bg = {c: n for c, n in color_count.items() if c != default_bg}
+
+    if not non_bg:
+        # Toutes les couleurs du bloc sont le fond
+        return {
+            'Background': default_bg,
+            'Foreground': default_bg,
+            'IsSingleColor': True
+        }
+
+    fg = max(non_bg, key=lambda c: non_bg[c])
+
     return {
-        'Background': bg,
+        'Background': default_bg,
         'Foreground': fg,
         'IsSingleColor': False
     }
@@ -243,22 +246,27 @@ def convert_png_to_mo5_sprite(image_path, sprite_name=None, default_bg=0, quiet=
                         pixel_color = get_closest_mo5_color(r, g, b, a)
                         
                         if pixel_color is not None:
-                            # Si la couleur est plus proche de fg que de bg
-                            dist_fg = get_color_distance(r, g, b,
-                                                        MO5_PALETTE[fg]['R'],
-                                                        MO5_PALETTE[fg]['G'],
-                                                        MO5_PALETTE[fg]['B'])
-                            dist_bg = get_color_distance(r, g, b,
-                                                        MO5_PALETTE[bg]['R'],
-                                                        MO5_PALETTE[bg]['G'],
-                                                        MO5_PALETTE[bg]['B'])
-                            
-                            if dist_fg <= dist_bg:
-                                pixel_bit = 1  # Forme
-                                visual += "█"
-                            else:
-                                pixel_bit = 0  # Fond
+                            if fg == bg:
+                                # Bloc monochrome fond : tous les pixels = fond
+                                pixel_bit = 0
                                 visual += "-"
+                            else:
+                                # Si la couleur est plus proche de fg que de bg
+                                dist_fg = get_color_distance(r, g, b,
+                                                            MO5_PALETTE[fg]['R'],
+                                                            MO5_PALETTE[fg]['G'],
+                                                            MO5_PALETTE[fg]['B'])
+                                dist_bg = get_color_distance(r, g, b,
+                                                            MO5_PALETTE[bg]['R'],
+                                                            MO5_PALETTE[bg]['G'],
+                                                            MO5_PALETTE[bg]['B'])
+
+                                if dist_fg < dist_bg:
+                                    pixel_bit = 1  # Forme
+                                    visual += "█"
+                                else:
+                                    pixel_bit = 0  # Fond
+                                    visual += "-"
                         else:
                             pixel_bit = 0
                             visual += "-"
