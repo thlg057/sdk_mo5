@@ -21,6 +21,22 @@
 #include "mo5_sprite_types.h"
 
 // ============================================================================
+// LOW-LEVEL API (raw coordinates)
+// ============================================================================
+
+void mo5_draw_sprite_bg(unsigned char tx, unsigned char ty,
+                        unsigned char *form_data, unsigned char *color_data,
+                        unsigned char width_bytes, unsigned char height);
+
+void mo5_clear_sprite_bg(unsigned char tx, unsigned char ty,
+                         unsigned char width_bytes, unsigned char height);
+
+void mo5_move_sprite_bg(unsigned char old_tx, unsigned char old_ty,
+                        unsigned char new_tx,  unsigned char new_ty,
+                        unsigned char *form_data, unsigned char *color_data,
+                        unsigned char width_bytes, unsigned char height);
+
+// ============================================================================
 // ACTOR API (game level)
 // ============================================================================
 

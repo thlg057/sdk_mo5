@@ -18,7 +18,7 @@
 // API BAS NIVEAU
 // ============================================================================
 
-static void mo5_draw_sprite_bg(unsigned char tx,          unsigned char ty,
+void mo5_draw_sprite_bg(unsigned char tx,          unsigned char ty,
                         unsigned char *form_src,   unsigned char *color_src,
                         unsigned char width_bytes, unsigned char height)
 {
@@ -50,7 +50,7 @@ static void mo5_draw_sprite_bg(unsigned char tx,          unsigned char ty,
     }
 }
 
-static void mo5_clear_sprite_bg(unsigned char tx,          unsigned char ty,
+void mo5_clear_sprite_bg(unsigned char tx,          unsigned char ty,
                          unsigned char width_bytes, unsigned char height)
 {
     unsigned char *row      = VRAM + (unsigned int)ty * SCREEN_WIDTH_BYTES + tx;
@@ -67,7 +67,7 @@ static void mo5_clear_sprite_bg(unsigned char tx,          unsigned char ty,
     }
 }
 
-static void mo5_move_sprite_bg(unsigned char old_tx,      unsigned char old_ty,
+void mo5_move_sprite_bg(unsigned char old_tx,      unsigned char old_ty,
                         unsigned char new_tx,       unsigned char new_ty,
                         unsigned char *form_src,   unsigned char *color_src,
                         unsigned char width_bytes, unsigned char height)
