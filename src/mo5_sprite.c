@@ -9,136 +9,111 @@
 #include "mo5_sprite.h"
 
 // ============================================================================
+// HELPER INTERNE
+// ============================================================================
+
+/*
+ * Remplit une zone rectangulaire d'une banque déjà sélectionnée.
+ * PRC doit être positionné avant l'appel.
+ */
+static void fill_rect_vram(unsigned char tx,          unsigned char ty,
+                           unsigned char width_bytes, unsigned char height,
+                           unsigned char value)
+{
+    unsigned char *row      = VRAM + (unsigned int)ty * SCREEN_WIDTH_BYTES + tx;
+    unsigned char  rows_left = height;
+
+    while (rows_left--) {
+        unsigned char *p   = row;
+        unsigned char  col = width_bytes;
+        while (col--) *p++ = value;
+        row += SCREEN_WIDTH_BYTES;
+    }
+}
+
+/*
+ * Copie un buffer src dans une zone rectangulaire d'une banque déjà sélectionnée.
+ * PRC doit être positionné avant l'appel.
+ * src est avancé par l'appelant si besoin — ici on reçoit un pointeur direct.
+ */
+static void blit_rect_vram(unsigned char tx,          unsigned char ty,
+                           unsigned char width_bytes, unsigned char height,
+                           unsigned char *src)
+{
+    unsigned char *row      = VRAM + (unsigned int)ty * SCREEN_WIDTH_BYTES + tx;
+    unsigned char  rows_left = height;
+
+    while (rows_left--) {
+        unsigned char *p   = row;
+        unsigned char  col = width_bytes;
+        while (col--) *p++ = *src++;
+        row += SCREEN_WIDTH_BYTES;
+    }
+}
+
+// ============================================================================
 // API BAS NIVEAU
 // ============================================================================
 
-void mo5_draw_sprite(unsigned char tx, unsigned char ty,
-                     unsigned char *form_data, unsigned char *color_data,
-                     unsigned char width_bytes, unsigned char height) {
-    unsigned int   offset;
-    unsigned char  i, j;
-    unsigned char *src;
-
+void mo5_draw_sprite(unsigned char tx,          unsigned char ty,
+                     unsigned char *form_data,  unsigned char *color_data,
+                     unsigned char width_bytes, unsigned char height)
+{
     *PRC &= ~0x01;
-    src = color_data;
-    for (i = 0; i < height; i++) {
-        offset = row_offsets[ty + i] + tx;
-        for (j = 0; j < width_bytes; j++)
-            VRAM[offset + j] = *src++;
-    }
+    blit_rect_vram(tx, ty, width_bytes, height, color_data);
 
     *PRC |= 0x01;
-    src = form_data;
-    for (i = 0; i < height; i++) {
-        offset = row_offsets[ty + i] + tx;
-        for (j = 0; j < width_bytes; j++)
-            VRAM[offset + j] = *src++;
-    }
+    blit_rect_vram(tx, ty, width_bytes, height, form_data);
 }
 
-void mo5_clear_sprite(unsigned char tx, unsigned char ty,
-                      unsigned char width_bytes, unsigned char height) {
-    unsigned int  offset;
-    unsigned char i, j;
-
+void mo5_clear_sprite(unsigned char tx,          unsigned char ty,
+                      unsigned char width_bytes, unsigned char height)
+{
     *PRC &= ~0x01;
-    for (i = 0; i < height; i++) {
-        offset = row_offsets[ty + i] + tx;
-        for (j = 0; j < width_bytes; j++)
-            VRAM[offset + j] = 0x00;
-    }
+    fill_rect_vram(tx, ty, width_bytes, height, 0x00);
 
     *PRC |= 0x01;
-    for (i = 0; i < height; i++) {
-        offset = row_offsets[ty + i] + tx;
-        for (j = 0; j < width_bytes; j++)
-            VRAM[offset + j] = 0x00;
-    }
+    fill_rect_vram(tx, ty, width_bytes, height, 0x00);
 }
 
-/**
- * Déplace un sprite avec rendu différentiel.
- * Ne cleare que la zone hors recouvrement (~25% d'écritures économisées).
- * dx/dy en signed char : suffisant pour ±127px, fallback clear+draw au-delà.
- */
-void mo5_move_sprite(unsigned char old_tx, unsigned char old_ty,
-                     unsigned char new_tx,  unsigned char new_ty,
-                     unsigned char *form_data, unsigned char *color_data,
-                     unsigned char width_bytes, unsigned char height) {
-    signed char    dx = (signed char)(new_tx - old_tx);
-    signed char    dy = (signed char)(new_ty - old_ty);
-    unsigned int   offset;
-    unsigned char  i, j;
-    unsigned char *src;
-    unsigned char  adx = dx < 0 ? -dx : dx;
-    unsigned char  ady = dy < 0 ? -dy : dy;
-    unsigned char  overlap_w, overlap_h;
+void mo5_move_sprite(unsigned char old_tx,      unsigned char old_ty,
+                     unsigned char new_tx,       unsigned char new_ty,
+                     unsigned char *form_data,   unsigned char *color_data,
+                     unsigned char width_bytes,  unsigned char height)
+{
+    signed char   dx   = (signed char)(new_tx - old_tx);
+    signed char   dy   = (signed char)(new_ty - old_ty);
+    unsigned char adx  = dx < 0 ? -dx : dx;
+    unsigned char ady  = dy < 0 ? -dy : dy;
+    unsigned char bank;
 
     if (adx >= width_bytes || ady >= height) {
         mo5_clear_sprite(old_tx, old_ty, width_bytes, height);
-        mo5_draw_sprite(new_tx, new_ty, form_data, color_data, width_bytes, height);
+        mo5_draw_sprite (new_tx, new_ty, form_data, color_data, width_bytes, height);
         return;
     }
 
-    overlap_w = width_bytes - adx;
-    overlap_h = height      - ady;
+    /* Les deux passes (couleur puis forme) sont identiques — on boucle. */
+    for (bank = 0; bank < 2; bank++) {
+        unsigned char *src = bank ? form_data : color_data;
 
-    // -------------------------------------------------------------------------
-    // PASSE COULEUR
-    // -------------------------------------------------------------------------
-    *PRC &= ~0x01;
+        if (bank) *PRC |= 0x01; else *PRC &= ~0x01;
 
-    if (dx != 0) {
-        unsigned char clear_col = (dx > 0) ? old_tx : (old_tx + width_bytes - adx);
-        for (i = 0; i < height; i++) {
-            offset = row_offsets[old_ty + i] + clear_col;
-            for (j = 0; j < adx; j++)
-                VRAM[offset + j] = 0x00;
+        /* Clear colonne sortante */
+        if (dx != 0) {
+            unsigned char clear_x = (dx > 0) ? old_tx
+                                              : old_tx + width_bytes - adx;
+            fill_rect_vram(clear_x, old_ty, adx, height, 0x00);
         }
-    }
-    if (dy != 0) {
-        unsigned char clear_row = (dy > 0) ? old_ty : (old_ty + height - ady);
-        for (i = 0; i < ady; i++) {
-            offset = row_offsets[clear_row + i] + old_tx;
-            for (j = 0; j < width_bytes; j++)
-                VRAM[offset + j] = 0x00;
+
+        /* Clear ligne sortante */
+        if (dy != 0) {
+            unsigned char clear_y = (dy > 0) ? old_ty
+                                              : old_ty + height - ady;
+            fill_rect_vram(old_tx, clear_y, width_bytes, ady, 0x00);
         }
-    }
 
-    src = color_data;
-    for (i = 0; i < height; i++) {
-        offset = row_offsets[new_ty + i] + new_tx;
-        for (j = 0; j < width_bytes; j++)
-            VRAM[offset + j] = *src++;
-    }
-
-    // -------------------------------------------------------------------------
-    // PASSE FORME
-    // -------------------------------------------------------------------------
-    *PRC |= 0x01;
-
-    if (dx != 0) {
-        unsigned char clear_col = (dx > 0) ? old_tx : (old_tx + width_bytes - adx);
-        for (i = 0; i < height; i++) {
-            offset = row_offsets[old_ty + i] + clear_col;
-            for (j = 0; j < adx; j++)
-                VRAM[offset + j] = 0x00;
-        }
-    }
-    if (dy != 0) {
-        unsigned char clear_row = (dy > 0) ? old_ty : (old_ty + height - ady);
-        for (i = 0; i < ady; i++) {
-            offset = row_offsets[clear_row + i] + old_tx;
-            for (j = 0; j < width_bytes; j++)
-                VRAM[offset + j] = 0x00;
-        }
-    }
-
-    src = form_data;
-    for (i = 0; i < height; i++) {
-        offset = row_offsets[new_ty + i] + new_tx;
-        for (j = 0; j < width_bytes; j++)
-            VRAM[offset + j] = *src++;
+        blit_rect_vram(new_tx, new_ty, width_bytes, height, src);
     }
 }
 
@@ -146,22 +121,25 @@ void mo5_move_sprite(unsigned char old_tx, unsigned char old_ty,
 // API ACTOR
 // ============================================================================
 
-void mo5_actor_draw(const MO5_Actor *actor) {
+void mo5_actor_draw(const MO5_Actor *actor)
+{
     mo5_draw_sprite(
-        actor->pos.x, actor->pos.y,
-        actor->sprite->form, actor->sprite->color,
+        actor->pos.x,               actor->pos.y,
+        actor->sprite->form,        actor->sprite->color,
         actor->sprite->width_bytes, actor->sprite->height
     );
 }
 
-void mo5_actor_clear(const MO5_Actor *actor) {
+void mo5_actor_clear(const MO5_Actor *actor)
+{
     mo5_clear_sprite(
-        actor->pos.x, actor->pos.y,
+        actor->pos.x,               actor->pos.y,
         actor->sprite->width_bytes, actor->sprite->height
     );
 }
 
-void mo5_actor_move(MO5_Actor *actor, unsigned char new_x, unsigned char new_y) {
+void mo5_actor_move(MO5_Actor *actor, unsigned char new_x, unsigned char new_y)
+{
     if (actor->pos.x == new_x && actor->pos.y == new_y)
         return;
 
@@ -170,14 +148,15 @@ void mo5_actor_move(MO5_Actor *actor, unsigned char new_x, unsigned char new_y) 
     actor->pos.y   = new_y;
 
     mo5_move_sprite(
-        actor->old_pos.x, actor->old_pos.y,
-        actor->pos.x,     actor->pos.y,
-        actor->sprite->form, actor->sprite->color,
+        actor->old_pos.x,           actor->old_pos.y,
+        actor->pos.x,               actor->pos.y,
+        actor->sprite->form,        actor->sprite->color,
         actor->sprite->width_bytes, actor->sprite->height
     );
 }
 
-void mo5_actor_clamp(MO5_Actor *actor) {
+void mo5_actor_clamp(MO5_Actor *actor)
+{
     unsigned char max_x = SCREEN_WIDTH_BYTES - actor->sprite->width_bytes;
     unsigned char max_y = SCREEN_HEIGHT      - actor->sprite->height;
 
