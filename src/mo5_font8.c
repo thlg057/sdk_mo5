@@ -103,9 +103,8 @@ static void font8_putchar(unsigned char tx, unsigned char ty,
 
     while (i--) color_data[i] = fg;
 
-    mo5_draw_sprite_bg(tx, ty * 8,
-                       font8_get(c), color_data,
-                       1, 8);
+    /* ty en pixels bruts — pas de multiplication */
+    mo5_draw_sprite_bg(tx, ty, font8_get(c), color_data, 1, 8);
 }
 
 void mo5_font8_puts(unsigned char tx, unsigned char ty,
@@ -114,7 +113,7 @@ void mo5_font8_puts(unsigned char tx, unsigned char ty,
     while (*s) {
         font8_putchar(tx, ty, *s++, fg_color);
         tx++;
-        if (tx >= SCREEN_WIDTH_BYTES) { tx = 0; ty++; }
+        if (tx >= SCREEN_WIDTH_BYTES) { tx = 0; ty += 8; }
     }
 }
 
@@ -122,6 +121,6 @@ void mo5_font8_clear(unsigned char tx, unsigned char ty, unsigned char len)
 {
     while (len--) {
         font8_putchar(tx++, ty, ' ', 0);
-        if (tx >= SCREEN_WIDTH_BYTES) { tx = 0; ty++; }
+        if (tx >= SCREEN_WIDTH_BYTES) { tx = 0; ty += 8; }
     }
 }
