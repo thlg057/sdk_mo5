@@ -155,14 +155,6 @@ Your source image must respect the MO5 hardware constraints:
 
 ### Converting a PNG to a C sprite header
 
-Use `png2mo5.py` from the sdk_mo5 scripts:
-
-```bash
-python3 tools/scripts/png2mo5.py assets/hero.png --name include/assets/hero --transparent
-```
-
-**If using the mo5_template**, a `convert` shortcut is available:
-
 ```bash
 make convert IMG=assets/hero.png
 ```
