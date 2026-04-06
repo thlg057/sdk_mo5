@@ -270,6 +270,19 @@ mo5_actor_move_form(MO5_Actor *actor, new_x, new_y);
 | Color bank written | Yes (fg nibble only) | **Never** |
 | Best for | Characters, enemies, scenery | Bullets, HUD, single-color elements |
 
+### ⚠️ Do not mix engines
+
+**Pick one engine and use it consistently for all your sprites.** Mixing engines corrupts the color bank state and produces unpredictable rendering.
+
+The classic failure case: using `mo5_sprite` (opaque) alongside `mo5_sprite_bg` (transparent). `mo5_sprite` writes the full color byte — both foreground and background nibbles — directly into VRAM. When `mo5_sprite_bg` later reads that area to preserve the background, it finds the sprite's background color instead of the scenery's, and the masking operation produces wrong colors.
+
+The same logic applies to other combinations:
+
+- `mo5_sprite_form` assumes the color bank is never touched after `mo5_video_init` — any other engine that writes color bytes will break this assumption
+- `mo5_actor_dr` saves and restores VRAM verbatim — if another engine modified the color bank in between, the restored content will be incorrect
+
+> **Rule of thumb:** if your game has a colored background, use `mo5_sprite_bg` everywhere. Add `mo5_sprite_form` only for elements that genuinely need the extra speed and share the global foreground color (bullets, particles). Never mix opaque (`mo5_sprite`) with transparent (`mo5_sprite_bg`) modes on the same screen.
+
 ---
 
 ## Part 6 — Screen Utilities
