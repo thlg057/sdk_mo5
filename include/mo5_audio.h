@@ -28,7 +28,14 @@
  * REGISTRES
  * ========================================================================= */
 
-/** PIA système PORTB — bit 0 = buzzer 1-bit */
+/** Registre STATUS du moniteur — bit 3 : 0=bip activé, 1=bip désactivé.
+ *  Méthode recommandée pour couper le bip clavier (Clefs Pour MO5 p.110). */
+#define MO5_STATUS_REG  ((unsigned char *)0x2019)
+#define MO5_BEEP_BIT    0x08
+
+/** PIA système PORTB — bit 0 = buzzer son.
+ *  Utilisé directement par mo5_beep() pour générer les fréquences.
+ *  Source : Manuel Technique MO5 p.40 + MAME thomson.cpp. */
 #define BUZZER_REG      ((unsigned char *)0xA7C1)
 #define BUZZER_BIT      0x01
 

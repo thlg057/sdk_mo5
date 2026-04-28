@@ -11,7 +11,9 @@ This guide covers everything needed to develop a graphical game or application f
 
 ## Part 1 — Setting up the SDK
 
-The build system is pre-configured. Install the SDK with:
+### Option A — Using the project template (recommended)
+
+If your project is based on the mo5_template, the build system is pre-configured. Install the SDK with:
 
 ```bash
 make install
@@ -35,6 +37,22 @@ PROJ_HDR := include/game.h           # All your .h files — REQUIRED for make t
 ```
 
 > **Important:** always list your `.h` files in `PROJ_HDR`. If a header changes but is not listed, `make` will not detect the change and will not recompile — leading to silent bugs.
+
+### Option B — Manual installation
+
+Clone and build the SDK manually:
+
+```bash
+git clone https://github.com/thlg057/sdk_mo5.git
+make export_sdk DIST_DIR=./tools -C sdk_mo5
+rm -rf sdk_mo5
+```
+
+Then compile your project with:
+
+```bash
+cmoc --thommo --org=0x2600 -I./tools/include -o bin/MYPROG.BIN src/main.c tools/lib/libsdk_mo5.a
+```
 
 ---
 
@@ -155,6 +173,14 @@ Your source image must respect the MO5 hardware constraints:
 
 ### Converting a PNG to a C sprite header
 
+Use `png2mo5.py` from the sdk_mo5 scripts:
+
+```bash
+python3 tools/scripts/png2mo5.py assets/hero.png --name include/assets/hero --transparent
+```
+
+**If using the mo5_template**, a `convert` shortcut is available:
+
 ```bash
 make convert IMG=assets/hero.png
 ```
@@ -179,6 +205,7 @@ unsigned char sprite_hero_color[64] = { /* color attribute data */ };
 |--------|-------------|
 | `--name <path>` | Output path and sprite name (without extension) |
 | `--bg-color <0-15>` | Background color index (default: 0 = black) |
+| `--transparent` | Force background bits to 0 in the color bank — required for `mo5_sprite_bg` |
 | `--quiet` | Suppress verbose output |
 
 ### How the conversion works
@@ -196,9 +223,9 @@ If the image width is not a multiple of 8, it is truncated to the nearest lower 
 
 ## Part 5 — Rendering Sprites
 
-The SDK provides two sprite engines with different trade-offs.
+The SDK provides four sprite engines. **`mo5_sprite_bg` is the recommended default** as it handles transparency correctly over any colored background. The other modes are available for specific performance or background constraints.
 
-### mo5_sprite_bg — Transparent rendering (recommended)
+### mo5_sprite_bg — Transparent rendering ✅ recommended
 
 `mo5_sprite_bg.h` renders sprites over a colored background, preserving the background color behind each sprite. This is the standard mode for games with a visible scenery.
 
@@ -228,8 +255,6 @@ hero.pos.y = 50;
 mo5_actor_move_bg(&hero, new_x, new_y);   /* Clear old position, draw at new position */
 ```
 
-Available functions:
-
 ```c
 /* Low-level (raw byte coordinates) */
 mo5_draw_sprite_bg(tx, ty, form_data, color_data, width_bytes, height);
@@ -242,13 +267,39 @@ mo5_actor_clear_bg(const MO5_Actor *actor);
 mo5_actor_move_bg(MO5_Actor *actor, new_x, new_y);  /* No-op if position unchanged */
 ```
 
-### mo5_sprite_form — Form-only rendering (optimized)
+---
 
-`mo5_sprite_form.h` only writes to the form bank. The color bank is set once at initialization and never touched. This is significantly faster than `mo5_sprite_bg` but restricts all sprite pixels to the same foreground color, set globally by `mo5_video_init`.
+### mo5_sprite — Opaque rendering (solid black background)
 
-Use this mode for UI elements, bullets, or any sprite that shares a single uniform color with the background.
+`mo5_sprite.h` writes directly to both the color and form banks. The sprite background overwrites whatever is in VRAM. Use this only when the background is solid black (as initialized by `mo5_video_init`) — any scenery beneath the sprite will be destroyed.
+
+The `mo5_move_sprite` function is optimized: when moving by small increments, it only clears the non-overlapping area, resulting in ~25% fewer VRAM writes compared to a full clear + redraw.
 
 ```c
+#include "mo5_sprite.h"
+
+/* Low-level */
+mo5_draw_sprite(tx, ty, form_data, color_data, width_bytes, height);
+mo5_clear_sprite(tx, ty, width_bytes, height);
+mo5_move_sprite(old_tx, old_ty, new_tx, new_ty, form_data, color_data, width_bytes, height);
+
+/* Actor API */
+mo5_actor_draw(const MO5_Actor *actor);
+mo5_actor_clear(const MO5_Actor *actor);
+mo5_actor_move(MO5_Actor *actor, new_x, new_y);  /* No-op if position unchanged */
+```
+
+---
+
+### mo5_sprite_form — Form-only rendering (maximum speed)
+
+`mo5_sprite_form.h` only writes to the form bank. The color bank is set once at initialization and never touched. This is the fastest rendering mode but restricts all sprite pixels to the single foreground color set globally by `mo5_video_init`.
+
+Use this mode for bullets, particles, or any element that shares a uniform foreground color with the rest of the screen.
+
+```c
+#include "mo5_sprite_form.h"
+
 /* Low-level */
 mo5_draw_sprite_form(tx, ty, form_data, width_bytes, height);
 mo5_clear_sprite_form(tx, ty, width_bytes, height);
@@ -260,15 +311,56 @@ mo5_actor_clear_form(const MO5_Actor *actor);
 mo5_actor_move_form(MO5_Actor *actor, new_x, new_y);
 ```
 
-### Choosing the right mode
+---
 
-| Criteria | mo5_sprite_bg | mo5_sprite_form |
-|----------|--------------|-----------------|
-| Background preserved | ✓ Yes | ✗ No |
-| Multi-color sprites | ✓ Yes | ✗ No (form color only) |
-| Speed | Slower | **Faster** |
-| Color bank written | Yes (fg nibble only) | **Never** |
-| Best for | Characters, enemies, scenery | Bullets, HUD, single-color elements |
+### mo5_actor_dr — Dirty Rectangle (arbitrary colored backgrounds)
+
+`mo5_actor_dr.h` is the most flexible engine. Before drawing each sprite, it saves the exact VRAM content (both banks) beneath it, and restores it at the start of the next frame. This allows sprites to move over fully arbitrary colored backgrounds — including other sprites — without any artifacts.
+
+**This comes at a CPU and RAM cost:** each actor allocates two static buffers of `MO5_DR_MAX_WIDTH × MO5_DR_MAX_HEIGHT` bytes (128 bytes each by default), and the save/restore cycle adds two full VRAM copies per frame per actor. Use only when `mo5_sprite_bg` cannot handle your background.
+
+**Maximum sprite size:** 32 pixels wide (4 bytes) × 32 pixels tall (`MO5_DR_MAX_WIDTH` / `MO5_DR_MAX_HEIGHT`).
+
+**Required per-frame sequence:**
+
+```c
+#include "mo5_actor_dr.h"
+
+MO5_Actor_DR hero;
+
+/* Once, before the game loop: */
+mo5_actor_dr_init(&hero, &sprite_hero, start_x, start_y);
+
+/* Each frame: */
+while (1) {
+    mo5_wait_vbl();
+
+    /* 1. Restore background — REVERSE draw order */
+    mo5_actor_dr_restore(&hero);
+
+    /* 2. Update logic */
+    mo5_actor_dr_move(&hero, new_x, new_y);
+
+    /* 3. Save VRAM then draw — normal draw order */
+    mo5_actor_dr_save_draw(&hero);
+}
+```
+
+> The restore/draw order matters when sprites overlap: restoring in reverse order and drawing in normal order ensures correct layering without artifacts.
+
+---
+
+### Choosing the right engine
+
+| Criteria | mo5_sprite_bg ✅ | mo5_sprite | mo5_sprite_form | mo5_actor_dr |
+|----------|:---:|:---:|:---:|:---:|
+| **Transparency / background preserved** | ✓ | ✗ | ✗ (form only) | ✓ (exact) |
+| **Multi-color sprites** | ✓ | ✓ | ✗ | ✓ |
+| **Works over colored scenery** | ✓ | ✗ | ✗ | ✓ |
+| **Overlapping sprites without artifacts** | ✗ | ✗ | ✗ | ✓ |
+| **Speed** | Fast | Fast | **Fastest** | Slowest |
+| **Extra RAM per actor** | None | None | None | 256 bytes |
+| **Best for** | Characters, enemies | Sprites on black bg | Bullets, HUD | Complex layered scenes |
 
 ### ⚠️ Do not mix engines
 

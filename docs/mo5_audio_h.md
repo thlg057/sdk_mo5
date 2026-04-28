@@ -41,14 +41,21 @@ Aucune dépendance interne au SDK.
 | Macro | Adresse | Rôle |
 |-------|---------|------|
 | `BUZZER_REG` | `$A7C1` | PIA système PORTB — bit 0 = buzzer |
-| `BUZZER_BIT` | `0x01` | Masque du bit buzzer |
+| `BUZZER_BIT` | `0x01` | Masque bit 0 — utilisé par `mo5_beep()` |
+| `MO5_STATUS_REG` | `$2019` | Registre STATUS moniteur |
+| `MO5_BEEP_BIT` | `0x08` | Bit 3 : 0 = bip clavier activé, 1 = désactivé |
 | `DAC_REG` | `$A7CD` | PIA extension PORTB — DAC son |
 | `DAC_CRB_REG` | `$A7CF` | PIA extension CRB — contrôle DDR/PORTB |
 | `DAC_DDR_MASK` | `0x3F` | Bits B0–B5 en sorties |
 | `DAC_MAX` | `63` | Valeur maximale du DAC |
 
-> ⚠️ `BUZZER_REG` partage le registre `$A7C1` avec la matrice clavier.
-> Les fonctions du module utilisent un read-modify-write pour préserver les autres bits.
+**Distinction importante entre les deux registres :**
+
+- `BUZZER_REG` (`$A7C1` bit 0) — utilisé par `mo5_beep()` pour **générer des sons programmés**. Le CPU fait basculer ce bit à la fréquence voulue.
+- `MO5_STATUS_REG` (`$2019` bit 3) — utilisé par `mo5_mute_beep()` pour **couper le bip clavier de la ROM**. Agit au niveau du moniteur sans perturber la matrice clavier.
+
+> Les deux coexistent et ont des rôles différents. `mo5_mute_beep()` n'empêche pas `mo5_beep()` de fonctionner.
+> Source : Clefs Pour MO5 p.110 et p.118 (bip clavier) + Manuel Technique MO5 p.40 (buzzer).
 
 ---
 
@@ -69,13 +76,16 @@ Il est **toujours disponible** sur tout MO5, sans initialisation préalable.
 void mo5_mute_beep(void);
 ```
 
-Coupe le bip clavier et tout son buzzer système. Force le bit 0 de `$A7C1` à 0.
+Coupe le bip clavier en mettant le bit 3 du registre STATUS du moniteur (`$2019`) à 1.
 
-**À appeler une fois au démarrage du jeu**, avant la boucle principale, pour supprimer le bip ROM qui sonne à chaque appui de touche.
+C'est la méthode recommandée : elle agit au niveau du moniteur ROM, sans toucher
+au PIA système `$A7C1` ni risquer de perturber la matrice clavier.
+
+**À appeler une fois au démarrage du jeu**, avant la boucle principale.
 
 ```c
 mo5_video_init(COLOR(C_BLACK, C_BLACK));
-mo5_mute_beep();   // ← supprimer le bip clavier
+mo5_mute_beep();   /* supprimer le bip clavier */
 ```
 
 ---
@@ -86,7 +96,8 @@ mo5_mute_beep();   // ← supprimer le bip clavier
 void mo5_unmute_beep(void);
 ```
 
-Restaure le bip clavier en remettant le bit buzzer à 1. À appeler si on veut rétablir le comportement standard de la ROM après une séquence de jeu.
+Restaure le bip clavier en remettant le bit 3 de `$2019` à 0. À appeler si on veut
+rétablir le comportement standard de la ROM.
 
 ---
 
@@ -310,4 +321,4 @@ table courante — cette évolution n'est pas encore dans le SDK.
 
 ---
 
-*Voir `mo5_hardware_reference.md` pour les détails des registres PIA et la source MAME.*
+*Voir `mo5_hardware_reference.md` sections 6 et 10 pour les détails des registres PIA et STATUS moniteur.*

@@ -12,24 +12,35 @@
  * API BUZZER
  * ========================================================================= */
 
+/*
+ * Méthode recommandée : agir sur le registre STATUS du moniteur $2019 bit 3.
+ * bit 3 = 0 → bruitage clavier activé
+ * bit 3 = 1 → bruitage clavier désactivé
+ * Source : Clefs Pour MO5 (Blanchard, 1985) p.110 et p.118.
+ *
+ * C'est plus propre que d'agir directement sur PORTB $A7C1 car :
+ * - le moniteur gère lui-même le bip via ce flag
+ * - on ne perturbe pas la matrice clavier sur PORTB
+ */
 void mo5_mute_beep(void)
 {
     unsigned char val;
-    val  = *BUZZER_REG;
-    val &= ~BUZZER_BIT;
-    *BUZZER_REG = val;
+    val  = *((unsigned char*)0x2019);
+    val |= 0x08;
+    *((unsigned char*)0x2019) = val;
 }
 
 void mo5_unmute_beep(void)
 {
     unsigned char val;
-    val  = *BUZZER_REG;
-    val |= BUZZER_BIT;
-    *BUZZER_REG = val;
+    val  = *((unsigned char*)0x2019);
+    val &= ~0x08;
+    *((unsigned char*)0x2019) = val;
 }
 
 /*
- * Principe : on fait basculer le bit buzzer à la fréquence voulue.
+ * Principe : on fait basculer le bit buzzer (BUZZER_REG = $A7C1 bit 0)
+ * à la fréquence voulue via des boucles d'attente.
  * Une "période" = un toggle à 1 + attente + un toggle à 0 + attente.
  * L'attente est une boucle vide sur unsigned char (max 255 itérations).
  *
