@@ -59,6 +59,9 @@ static unsigned char f_UNDER[] = {0x00,0x00,0x00,0x00,0x00,0x00,0x7E,0x00};
 static unsigned char f_STAR[]  = {0x00,0x66,0x3C,0xFF,0x3C,0x66,0x00,0x00};
 static unsigned char f_SLASH[] = {0x06,0x0C,0x0C,0x18,0x30,0x30,0x60,0x00};
 static unsigned char f_BSLASH[]= {0x60,0x30,0x30,0x18,0x0C,0x0C,0x06,0x00};
+static unsigned char f_PLUS[]  = {0x00,0x00,0x18,0x18,0xFF,0x18,0x18,0x00};
+static unsigned char f_AT[]    = {0x3C,0x42,0x42,0x5A,0x5E,0x40,0x3C,0x00};
+static unsigned char f_QUOTE[] = {0x18,0x18,0x18,0x00,0x00,0x00,0x00,0x00};
 
 /* =========================================================================
  * TABLE D'ACCES  (privee)
@@ -78,15 +81,18 @@ static unsigned char *font8_get(char c)
     if (c >= 'A' && c <= 'Z') return font8_alpha[c - 'A'];
     if (c >= 'a' && c <= 'z') return font8_alpha[c - 'a'];
     if (c >= '0' && c <= '9') return font8_nums[c - '0'];
-    if (c == '.')              return f_DOT;
-    if (c == '!')              return f_EXCL;
-    if (c == ':')              return f_COLON;
-    if (c == '=')              return f_EQUAL;
-    if (c == '-')              return f_MINUS;
-    if (c == '_')              return f_UNDER;
-    if (c == '*')              return f_STAR;
-    if (c == '/')              return f_SLASH;
-    if (c == '\\')              return f_BSLASH;
+    if (c == '.')             return f_DOT;
+    if (c == '!')             return f_EXCL;
+    if (c == ':')             return f_COLON;
+    if (c == '=')             return f_EQUAL;
+    if (c == '-')             return f_MINUS;
+    if (c == '_')             return f_UNDER;
+    if (c == '*')             return f_STAR;
+    if (c == '/')             return f_SLASH;
+    if (c == '\\')            return f_BSLASH;
+    if (c == '+')             return f_PLUS;
+    if (c == '@')             return f_AT;
+    if (c == '\'')            return f_QUOTE;
     return f_SPACE;
 }
 
@@ -104,6 +110,7 @@ static void font8_putchar(unsigned char tx, unsigned char ty,
     while (i--) color_data[i] = fg;
 
     /* ty en pixels bruts — pas de multiplication */
+    mo5_clear_sprite_form(tx, ty, 1, 8);
     mo5_draw_sprite_bg(tx, ty, font8_get(c), color_data, 1, 8);
 }
 
